@@ -261,26 +261,26 @@ BK = P-&gt;bk;                                   \
 <h2 id="unlink原理及其现利用方式"><a href="#unlink原理及其现利用方式" class="headerlink" title="unlink原理及其现利用方式"></a>unlink原理及其现利用方式</h2><p>在本节内容中，我将先介绍目前unlink的利用原理和效果，接着进行总结，之后将用一个例子来实践unlink的利用。</p>
 <p>unlink的利用中，最重要的便是处理<code>FD-&gt;bk != P || BK-&gt;fd != P</code>这一逻辑。</p>
 <p>不妨先看一看正常情况下的unlink。</p>
-<img src="unlink中的验证机制归纳总结/image-20200415092437231.png" alt="image-20200415092437231" style="zoom:80%;" />
+<img src="../unlink中的验证机制归纳总结/image-20200415092437231.png" srcset="/img/loading.gif" alt="image-20200415092437231" style="zoom:80%;" />
 
 <p>在这张图片中，x，y两者应该为在物理上与ptr相隔较远。有一个arr数组，一项存放了ptr的地址。</p>
 <p><strong>注意：ptr本身一定是不包含ptr的地址的！不要搞混淆了！</strong></p>
 <p>事实上，bk的计算实则为<code>&amp;(x+3*size_sz)</code>，fd的计算实则为<code>&amp;(y+2*size_sz)</code></p>
 <p>如果我们将fd和bk所指改为下图这样：</p>
-<img src="unlink中的验证机制归纳总结/image-20200415092940304.png" alt="image-20200415092940304" style="zoom:80%;" />
+<img src="../unlink中的验证机制归纳总结/image-20200415092940304.png" srcset="/img/loading.gif" alt="image-20200415092940304" style="zoom:80%;" />
 
 <p>同样可以满足验证，来看看接下来会发生什么。</p>
 <pre><code class="hljs c">FD-&gt;bk = BK;                                  \
 BK-&gt;fd = FD;                                  \</code></pre>
 
 <p>正常情况下：</p>
-<img src="unlink中的验证机制归纳总结/image-20200415094025429.png" alt="image-20200415094025429" style="zoom:80%;" />
+<img src="unlink中的验证机制归纳总结/image-20200415094025429.png" srcset="/img/loading.gif" alt="image-20200415094025429" style="zoom:80%;" />
 
 <p>而如果是我们修改过的情况：第一步：</p>
-<img src="unlink中的验证机制归纳总结/image-20200415093715542.png" alt="image-20200415093715542" style="zoom:80%;" />
+<img src="unlink中的验证机制归纳总结/image-20200415093715542.png" srcset="/img/loading.gif" alt="image-20200415093715542" style="zoom:80%;" />
 
 <p>第二步：</p>
-<img src="unlink中的验证机制归纳总结/image-20200415094141338.png" alt="image-20200415094141338" style="zoom:80%;" />
+<img src="unlink中的验证机制归纳总结/image-20200415094141338.png" srcset="/img/loading.gif" alt="image-20200415094141338" style="zoom:80%;" />
 
 <p>可以看到，原本存放p的地址的地方变成了自身地址减3*size_sz，</p>
 <p>了解了这个，但也要不要忘了什么时候触发unlink。</p>
@@ -743,6 +743,10 @@ sh.interactive()</code></pre>
 
 <!-- Plugins -->
 
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
 
 
 
