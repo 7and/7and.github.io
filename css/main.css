@@ -155,6 +155,9 @@ post-content strong {
 .markdown-body pre:not(:hover) > .copy-btn {
   outline: none;
 }
+.markdown-body pre code {
+  font-size: 100%;
+}
 .hidden-mobile {
   display: block;
 }
