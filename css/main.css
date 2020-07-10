@@ -155,9 +155,6 @@ post-content strong {
 .markdown-body pre:not(:hover) > .copy-btn {
   outline: none;
 }
-.markdown-body pre code {
-  font-size: 100%;
-}
 .hidden-mobile {
   display: block;
 }
@@ -658,7 +655,7 @@ sup > a::before,
   overflow: visible;
 }
 .markdown-body pre code {
-  font-size: 85%;
+  font-size: 100%;
   display: block;
   overflow-x: auto;
   padding: 0.5rem 0;
